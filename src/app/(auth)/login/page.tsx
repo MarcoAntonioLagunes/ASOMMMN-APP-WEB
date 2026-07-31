@@ -11,6 +11,7 @@ import api from '@/lib/api/client';
 import { loginSchema, LoginForm } from '@/lib/validators/auth';
 import AuthVideoBackground from '@/components/auth/AuthVideoBackground';
 import EscudoAsociacionAuth from '@/components/auth/EscudoAsociacionAuth';
+import PasswordInput from '@/components/ui/PasswordInput';
 
 const ROLE_HOME: Record<string, string> = {
   postulante: '/dashboard',
@@ -92,9 +93,19 @@ export default function LoginPage() {
 
       router.push(ROLE_HOME[res.data.user.rol] ?? '/');
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { message?: unknown } }; message?: string };
-      const msg = axiosErr.response?.data?.message ?? axiosErr.message ?? 'Error al iniciar sesión. Inténtalo de nuevo.';
-      setServerError(toErrorMessage(msg));
+      const axiosErr = err as {
+        response?: { status?: number; data?: { message?: unknown } };
+        message?: string;
+      };
+      const status = axiosErr.response?.status;
+      if (status === 401) {
+        setServerError('Correo o contraseña incorrectos.');
+      } else if (axiosErr.response) {
+        const msg = axiosErr.response.data?.message ?? 'Error al iniciar sesión. Inténtalo de nuevo.';
+        setServerError(toErrorMessage(msg));
+      } else {
+        setServerError('Error de conexión. Verifica tu internet e inténtalo de nuevo.');
+      }
     } finally {
       setLoading(false);
     }
@@ -158,8 +169,7 @@ export default function LoginPage() {
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
-              <Form.Control
-                type="password"
+              <PasswordInput
                 {...register('password')}
                 isInvalid={!!errors.password}
                 autoComplete="current-password"
